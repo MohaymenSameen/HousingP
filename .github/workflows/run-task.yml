@@ -1,0 +1,31 @@
+name: Run Task
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the changed files back to the repository.
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.4.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Running
+        run: |
+          npm cache clean --force
+          npm install
+          npm run task
+        env:
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          BOT_API: ${{ secrets.BOT_API }}
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update db.json
+          branch: main
