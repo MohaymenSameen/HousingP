@@ -1,5 +1,3 @@
-# HousingF
+# HousingP
 
-Credits go to Pablo Benmaman
-
-Link to OP Repository: https://github.com/blopa/funda-scraper
+A web scraping tool to gather house listings from pararius
