@@ -14,7 +14,7 @@ const storageFile = 'previous_results.json';
 const { CHAT_ID, BOT_API } = process.env;
 
 const urls = [
-    'https://www.pararius.com/apartments/utrecht/0-1200/radius-10'
+    'https://www.pararius.com/apartments/utrecht/0-1200/radius-10/since-3'
 ];
 
 // Load the previous results from the storage
@@ -79,7 +79,7 @@ const runPuppeteer = async (url) => {
         if (newResults.length > 0) {
             newResults.forEach((result, index) => {
                 // Construct the message text
-                const message = `New search result ${index + 1}: ${result.content}\nHref: ${result.href}`;
+                const message = `New search result ${index + 1}: ${result.content}\nHref: https://www.pararius.com${result.href}`;
 
                 // Send the message to the Telegram Bot API
                 sendTelegramMessage(message);
