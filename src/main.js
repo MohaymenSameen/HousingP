@@ -1,8 +1,7 @@
 require('dotenv').config();
 const puppeteer = require('puppeteer');
-const jsdom = require('jsdom');
-const nodeFetch = require('node-fetch');
-const { Console } = require('console');
+const { JSDOM } = require('jsdom');
+const fetch = require('node-fetch');
 const fs = require('fs');
 
 const WIDTH = 1920;
@@ -27,7 +26,6 @@ try {
 } catch (error) {
     console.error('Error loading previous results:', error);
 }
-
 
 const runTask = async () => {
     for (const url of urls) {
@@ -54,17 +52,16 @@ const runPuppeteer = async (url) => {
     await page.goto(url, { waitUntil: 'domcontentloaded' });
 
     const htmlString = await page.content();
-    const dom = new jsdom.JSDOM(htmlString);
-
+    const dom = new JSDOM(htmlString);
 
     console.log('parsing pararius.com data');
-    const result = dom.window.document.querySelectorAll('li.search-list__item search-list__item--listing');
+    const result = dom.window.document.querySelectorAll('li.search-list__item.search-list__item--listing');
 
     if (result.length > 0) {
         const newResults = [];
         result.forEach((item) => {
             // Get the text content of the search result item
-            const content = item.textContent;
+            const content = item.textContent.trim();
 
             // Get the href value of the anchor tag inside the search result item
             const anchorElement = item.querySelector('a'); // Assuming the anchor is a direct child
@@ -94,7 +91,6 @@ const runPuppeteer = async (url) => {
     } else {
         console.log('No search results found.');
     }
-
 
     console.log('closing browser');
     await browser.close();
