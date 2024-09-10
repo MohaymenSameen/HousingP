@@ -25,7 +25,8 @@ jobs:
 
       - name: Run scraper and send Telegram message
         run: |
-          python scraper.py
+          python ./scraper.py
+        working-directory: /home/runner/work/HousingP/HousingP
         env:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           BOT_API: ${{ secrets.BOT_API }}
