@@ -57,7 +57,7 @@ const runPuppeteer = async (url) => {
     if (listings.length > 0) {
         const newResults = [];
         listings.forEach((item) => {
-            const location = item.querySelector(".listing-search-item__sub-title'") ? item.querySelector(".listing-search-item__sub-title'").textContent.trim() : 'No location';
+            const location = item.querySelector("[class*='listing-search-item__sub-title']") ? item.querySelector("[class*='listing-search-item__sub-title']").textContent.trim() : 'No location';
             const price = item.querySelector('.listing-search-item__price') ? item.querySelector('.listing-search-item__price').textContent.trim() : 'No price';
             const rooms = item.querySelector('.illustrated-features__item--number-of-rooms') ? item.querySelector('.illustrated-features__item--number-of-rooms').textContent.trim() : 'No rooms';
             const area = item.querySelector('.illustrated-features__item--surface-area') ? item.querySelector('.illustrated-features__item--surface-area').textContent.trim() : 'No area';
