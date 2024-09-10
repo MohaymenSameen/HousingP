@@ -45,47 +45,40 @@ const runPuppeteer = async (url) => {
     });
 
     const page = await browser.newPage();
-    // https://stackoverflow.com/a/51732046/4307769 https://stackoverflow.com/a/68780400/4307769
     await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36');
 
     console.log('going to pararius');
-    // Updated to wait for the network to be idle after navigation
-    await page.goto(url, { waitUntil: 'networkidle2' });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
 
     const htmlString = await page.content();
     const dom = new JSDOM(htmlString);
-    //console.log('HTML Snippet:', htmlString); 
-    
+
     console.log('parsing pararius.com data');
-    const result = dom.window.document.querySelectorAll('li.search-list__item.search-list__item--listing');     
+    const result = dom.window.document.querySelectorAll('li.search-list__item.search-list__item--listing');
 
     if (result.length > 0) {
         const newResults = [];
         result.forEach((item) => {
-            // Get the text content of the search result item
             const content = item.textContent.trim();
-
-            // Get the href value of the anchor tag inside the search result item
-            const anchorElement = item.querySelector('a'); // Assuming the anchor is a direct child
+            const anchorElement = item.querySelector('a');
             const href = anchorElement ? anchorElement.getAttribute('href') : 'No href found';
 
-            // Check if the result is already in the previous results list
+            // Extract other fields
+            const location = item.querySelector('.listing-search-item__sub-title').textContent.trim();
+            const price = item.querySelector('.listing-search-item__price').textContent.trim();
+            const numOfRooms = item.querySelector('.illustrated-features__item--number-of-rooms').textContent.trim();
+            const area = item.querySelector('.illustrated-features__item--surface-area').textContent.trim();
+
             if (!previousResults.some((result) => result.href === href)) {
-                newResults.push({ content, href });
+                newResults.push({ content, href, location, price, numOfRooms, area });
             }
         });
 
         if (newResults.length > 0) {
             newResults.forEach((result, index) => {
-                // Construct the message text
-                const message = `New search result ${index + 1}: ${result.content}\nHref: https://www.pararius.com${result.href}`;
-
-                // Send the message to the Telegram Bot API
-                sendTelegramMessage(message);
+                sendTelegramMessage(result);
             });
 
-            // Update the storage with the new results
             previousResults = [...previousResults, ...newResults];
             fs.writeFileSync(storageFile, JSON.stringify(previousResults), 'utf8');
         } else {
@@ -99,17 +92,17 @@ const runPuppeteer = async (url) => {
     await browser.close();
 };
 
-if (CHAT_ID && BOT_API) {
-    runTask();
-} else {
-    console.log('Missing Telegram API keys!');
-}
-
-async function sendTelegramMessage(message) {
+// Function to send message to Telegram with Markdown formatting
+async function sendTelegramMessage(result) {
     const url = `https://api.telegram.org/bot${BOT_API}/sendMessage`;
+
+    // Message formatting with additional fields
+    const message = `*New Listing*\n\n*Location:* ${result.location}\n*Price:* *${result.price}*\n*Rooms:* ${result.numOfRooms}\n*Area:* ${result.area} m²\n[View listing](https://www.pararius.com${result.href})`;
+
     const data = {
         chat_id: CHAT_ID,
         text: message,
+        parse_mode: 'Markdown'
     };
 
     try {
@@ -129,4 +122,10 @@ async function sendTelegramMessage(message) {
     } catch (error) {
         console.error('Error sending message to Telegram:', error);
     }
+}
+
+if (CHAT_ID && BOT_API) {
+    runTask();
+} else {
+    console.log('Missing Telegram API keys!');
 }
