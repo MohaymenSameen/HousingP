@@ -6,17 +6,14 @@ const fs = require('fs');
 
 const WIDTH = 1920;
 const HEIGHT = 1080;
-
-// JSON file to store the previous results
 const storageFile = 'previous_results.json';
-
 const { CHAT_ID, BOT_API } = process.env;
 
 const urls = [
     'https://www.pararius.com/apartments/utrecht/0-1200/radius-50/since-3'
 ];
 
-// Load the previous results from the storage
+// Load previous results
 let previousResults = [];
 try {
     if (fs.existsSync(storageFile)) {
@@ -45,10 +42,7 @@ const runPuppeteer = async (url) => {
     });
 
     const page = await browser.newPage();
-    // https://stackoverflow.com/a/51732046/4307769 https://stackoverflow.com/a/68780400/4307769
     await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36');
-
-    console.log('going to pararius');
     await page.goto(url, { waitUntil: 'domcontentloaded' });
 
     const htmlString = await page.content();
@@ -60,14 +54,10 @@ const runPuppeteer = async (url) => {
     if (result.length > 0) {
         const newResults = [];
         result.forEach((item) => {
-            // Get the text content of the search result item
             const content = item.textContent.trim();
-
-            // Get the href value of the anchor tag inside the search result item
-            const anchorElement = item.querySelector('a'); // Assuming the anchor is a direct child
+            const anchorElement = item.querySelector('a.listing-search-item__link--depiction');
             const href = anchorElement ? anchorElement.getAttribute('href') : 'No href found';
 
-            // Check if the result is already in the previous results list
             if (!previousResults.some((result) => result.href === href)) {
                 newResults.push({ content, href });
             }
@@ -75,14 +65,10 @@ const runPuppeteer = async (url) => {
 
         if (newResults.length > 0) {
             newResults.forEach((result, index) => {
-                // Construct the message text
                 const message = `New search result ${index + 1}: ${result.content}\nHref: https://www.pararius.com${result.href}`;
-
-                // Send the message to the Telegram Bot API
                 sendTelegramMessage(message);
             });
 
-            // Update the storage with the new results
             previousResults = [...previousResults, ...newResults];
             fs.writeFileSync(storageFile, JSON.stringify(previousResults), 'utf8');
         } else {
