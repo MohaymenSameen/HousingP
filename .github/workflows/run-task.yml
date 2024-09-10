@@ -1,31 +1,31 @@
-name: Telegram Scraper Notification
-
+name: Run Task
 on:
-  schedule:
-    - cron: '*/15 * * * *'  # Runs every hour
   workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
 
 jobs:
-  scrape_and_notify:
+  build-and-deploy:
     runs-on: ubuntu-latest
-
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the changed files back to the repository.
+      contents: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Checkout
+        uses: actions/checkout@v2.4.0
         with:
-          python-version: '3.x'
+          ref: ${{ github.head_ref }}
 
-      - name: Install dependencies
+      - name: Running
         run: |
-          python -m pip install --upgrade pip
-          pip install requests beautifulsoup4
-
-      - name: Run scraper and send Telegram message
-        run: |
-          python ./scraper.py        
+          npm cache clean --force
+          npm install
+          npm run task
         env:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           BOT_API: ${{ secrets.BOT_API }}
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update db.json
+          branch: main
