@@ -6,17 +6,14 @@ const fs = require('fs');
 
 const WIDTH = 1920;
 const HEIGHT = 1080;
-
-// JSON file to store the previous results
 const storageFile = 'previous_results.json';
-
 const { CHAT_ID, BOT_API } = process.env;
 
 const urls = [
     'https://www.pararius.com/apartments/utrecht/0-1200/radius-50/since-3'
 ];
 
-// Load the previous results from the storage
+// Load previous results
 let previousResults = [];
 try {
     if (fs.existsSync(storageFile)) {
@@ -34,7 +31,7 @@ const runTask = async () => {
 }
 
 const runPuppeteer = async (url) => {
-    console.log('opening headless browser');
+    console.log('Opening headless browser');
     const browser = await puppeteer.launch({
         headless: true,
         args: [`--window-size=${WIDTH},${HEIGHT}`],
@@ -47,37 +44,35 @@ const runPuppeteer = async (url) => {
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36');
 
-    console.log('going to pararius');
+    console.log('Navigating to page');
     await page.goto(url, { waitUntil: 'networkidle2' });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
 
     const htmlString = await page.content();
     const dom = new JSDOM(htmlString);
 
-    console.log('parsing pararius.com data');
-    const result = dom.window.document.querySelectorAll('li.search-list__item.search-list__item--listing');
+    console.log('Parsing data...');
+    const listings = dom.window.document.querySelectorAll('li.search-list__item.search-list__item--listing');
 
-    if (result.length > 0) {
+    if (listings.length > 0) {
         const newResults = [];
-        result.forEach((item) => {
-            const content = item.textContent.trim();
-            const anchorElement = item.querySelector('a');
-            const href = anchorElement ? anchorElement.getAttribute('href') : 'No href found';
+        listings.forEach((item) => {
+            const location = item.querySelector('.listing-search-item__sub-title') ? item.querySelector('.listing-search-item__sub-title').textContent.trim() : 'No location';
+            const price = item.querySelector('.listing-search-item__price') ? item.querySelector('.listing-search-item__price').textContent.trim() : 'No price';
+            const rooms = item.querySelector('.illustrated-features__item--number-of-rooms') ? item.querySelector('.illustrated-features__item--number-of-rooms').textContent.trim() : 'No rooms';
+            const area = item.querySelector('.illustrated-features__item--surface-area') ? item.querySelector('.illustrated-features__item--surface-area').textContent.trim() : 'No area';
+            const linkElement = item.querySelector('a');
+            const href = linkElement ? linkElement.getAttribute('href') : 'No link';
 
-            // Extract other fields
-            const location = item.querySelector('.listing-search-item__sub-title').textContent.trim();
-            const price = item.querySelector('.listing-search-item__price').textContent.trim();
-            const numOfRooms = item.querySelector('.illustrated-features__item--number-of-rooms').textContent.trim();
-            const area = item.querySelector('.illustrated-features__item--surface-area').textContent.trim();
-
-            if (!previousResults.some((result) => result.href === href)) {
-                newResults.push({ content, href, location, price, numOfRooms, area });
+            if (!previousResults.some(result => result.href === href)) {
+                newResults.push({ location, price, rooms, area, href });
             }
         });
 
         if (newResults.length > 0) {
             newResults.forEach((result, index) => {
-                sendTelegramMessage(result);
+                const message = `📍 *Location*: ${result.location}\n💰 **Price**: **${result.price}**\n🏡 *Rooms*: ${result.rooms}\n📏 *Area*: ${result.area} sqm\n🔗 [View listing](https://www.pararius.com${result.href})`;
+                sendTelegramMessage(message);
             });
 
             previousResults = [...previousResults, ...newResults];
@@ -89,21 +84,22 @@ const runPuppeteer = async (url) => {
         console.log('No search results found.');
     }
 
-    console.log('closing browser');
+    console.log('Closing browser');
     await browser.close();
 };
 
-// Function to send message to Telegram with Markdown formatting
-async function sendTelegramMessage(result) {
+if (CHAT_ID && BOT_API) {
+    runTask();
+} else {
+    console.log('Missing Telegram API keys!');
+}
+
+async function sendTelegramMessage(message) {
     const url = `https://api.telegram.org/bot${BOT_API}/sendMessage`;
-
-    // Message formatting with additional fields
-    const message = `*New Listing*\n\n*Location:* ${result.location}\n*Price:* *${result.price}*\n*Rooms:* ${result.numOfRooms}\n*Area:* ${result.area} m²\n[View listing](https://www.pararius.com${result.href})`;
-
     const data = {
         chat_id: CHAT_ID,
         text: message,
-        parse_mode: 'Markdown'
+        parse_mode: 'Markdown'  // This ensures the text formatting is applied correctly in Telegram
     };
 
     try {
@@ -123,10 +119,4 @@ async function sendTelegramMessage(result) {
     } catch (error) {
         console.error('Error sending message to Telegram:', error);
     }
-}
-
-if (CHAT_ID && BOT_API) {
-    runTask();
-} else {
-    console.log('Missing Telegram API keys!');
 }
