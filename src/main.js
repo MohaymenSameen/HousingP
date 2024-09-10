@@ -53,7 +53,8 @@ const runPuppeteer = async (url) => {
 
     const htmlString = await page.content();
     const dom = new JSDOM(htmlString);
-
+    console.log('HTML Snippet:', htmlString.substring(0, 500)); 
+    
     console.log('parsing pararius.com data');
     const result = dom.window.document.querySelectorAll('ul.search-list');
        if (result.length === 0) {
