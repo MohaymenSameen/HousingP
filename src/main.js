@@ -13,7 +13,7 @@ const storageFile = 'previous_results.json';
 const { CHAT_ID, BOT_API } = process.env;
 
 const urls = [
-    'https://www.pararius.com/apartments/utrecht/0-1200/radius-50/since-3'
+    'https://www.pararius.com/apartments/nederland/0-1200/since-3'
 ];
 
 // Load the previous results from the storage
