@@ -58,15 +58,7 @@ const runPuppeteer = async (url) => {
     console.log('HTML Snippet:', htmlString); 
     
     console.log('parsing pararius.com data');
-    const result = dom.window.document.querySelectorAll('ul.search-list');
-       if (result.length === 0) {
-        console.log('No search results found. shig');
-    } else {
-        console.log(`Found ${result.length} items.`);
-        result.forEach((item, index) => {
-            console.log(`Item ${index + 1}:`, item.textContent.trim());
-        });
-    }
+    const result = dom.window.document.querySelectorAll('li.search-list__item.search-list__item--listing');     
 
     if (result.length > 0) {
         const newResults = [];
