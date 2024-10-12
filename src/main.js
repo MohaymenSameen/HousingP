@@ -34,7 +34,9 @@ const runPuppeteer = async (url) => {
     console.log('Opening headless browser');
     const browser = await puppeteer.launch({
         headless: true,
-        args: [`--window-size=${WIDTH},${HEIGHT}`],
+        args: [ '--no-sandbox',
+                '--disable-setuid-sandbox',
+                `--window-size=${WIDTH},${HEIGHT}`],
         defaultViewport: {
             width: WIDTH,
             height: HEIGHT,
